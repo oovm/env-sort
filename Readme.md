@@ -1,4 +1,16 @@
-Rust Template Project
+Env Sort
 =====================
 
-Rust template project for monorepo
+强迫症福音, 帮你的环境变量排序
+
+
+- 排序前
+
+
+
+- 排序后
+
+
+
+
+一本满足
