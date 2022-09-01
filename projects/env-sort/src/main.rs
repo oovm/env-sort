@@ -1,7 +1,13 @@
 mod errors;
 
-pub use errors::{Error, Result};
+pub use errors::{XError, XResult};
 
+mod windows;
+
+
+pub struct App {
+
+}
 
 pub fn main() {
     let path = std::env::var_os("PATH");
