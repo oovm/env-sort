@@ -3,6 +3,7 @@ mod errors;
 pub use errors::{XError, XResult};
 
 mod windows;
+pub mod utils;
 
 
 pub struct App {
