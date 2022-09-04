@@ -5,11 +5,8 @@ use std::fmt::{Debug, Display, Formatter};
 pub type XResult<T = ()> = Result<T, XError>;
 
 #[derive(Debug, Clone)]
-pub enum XError {
-    UnknownError,
-    RuntimeError {
-        message: String,
-    },
+pub struct XError {
+    message: String,
 }
 
 impl Display for XError {
@@ -18,15 +15,22 @@ impl Display for XError {
     }
 }
 
-impl Error for XError {
-
-}
+impl Error for XError {}
 
 
 impl From<VarError> for XError {
-    fn from(value: VarError) -> Self {
-        XError::RuntimeError {
-            message: value.to_string(),
+    fn from(error: VarError) -> Self {
+        XError {
+            message: error.to_string(),
+        }
+    }
+}
+
+
+impl From<std::io::Error> for XError {
+    fn from(error: std::io::Error) -> Self {
+        XError {
+            message: error.to_string(),
         }
     }
 }

@@ -1,40 +1,18 @@
-use std::mem::take;
-
-use crate::utils::NonEmpty;
+use winreg::enums::HKEY_CURRENT_USER;
+use winreg::RegKey;
+use crate::utils::{get_path, NonEmpty};
 use crate::XResult;
 
+
 #[test]
-pub fn get_path() -> XResult {
-    let mut out = NonEmpty::default();
-    let env_path = std::env::var("PATH")?;
-    let mut chars = env_path.chars();
-    let mut this = String::new();
-    // 这里不分割 ;, 因为文件名允许含有 ;, 但是不允许含有 "
-    while let Some(outer) = chars.next() {
-        match outer {
-            // 特殊分割
-            '\"' => {
-                out.push(take(&mut this));
-                while let Some(inner) = chars.next() {
-                    match inner {
-                        '\"' => {
-                            break;
-                        }
-                        _ => this.push(inner)
-                    }
-                }
-            }
-            // 普通分割
-            ';' => {
-                out.push(take(&mut this));
-            }
-            _ =>this.push(outer)
-        }
-    }
+fn test() {
+    sort_user_path(false).unwrap();
+}
 
-    out.push(take(&mut this));
-    out.vec
-
-    println!("{:#?}", out.vec);
+pub fn sort_user_path(execute: bool) -> XResult {
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let (env, _) = hkcu.create_subkey("Environment")?;
+    let path: String = env.get_value("PATH")?;
+    println!("{:#?}", get_path(&path));
     Ok(())
 }
