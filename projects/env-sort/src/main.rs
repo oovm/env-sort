@@ -9,9 +9,23 @@ pub mod utils;
 
 pub struct App {}
 
-pub fn main() {
-    let path = std::env::var_os("PATH");
-    let path_ext = std::env::var_os("PATHEXT");
-    println!("{:?}", path);
-    println!("{:?}", path_ext);
+
+pub struct Runner {
+    execute: bool,
+    verify: bool
+}
+
+impl Default for Runner {
+    fn default() -> Self {
+        Self {
+            execute: false,
+            verify: false,
+        }
+    }
+}
+
+
+fn main() {
+    let r = Runner::default();
+    r.run().unwrap();
 }
