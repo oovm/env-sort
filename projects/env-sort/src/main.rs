@@ -1,3 +1,5 @@
+#![feature(once_cell)]
+
 pub use errors::XResult;
 
 mod errors;

@@ -1,4 +1,5 @@
 use std::{collections::BTreeSet, path::PathBuf};
+use std::sync::LazyLock;
 
 use colored::Colorize;
 use winreg::{
@@ -6,7 +7,7 @@ use winreg::{
     RegKey,
 };
 
-use crate::{utils::get_path, Runner, XResult};
+use crate::{Runner, utils::get_path, XResult};
 
 impl Runner {
     pub fn run(&self) -> XResult {
@@ -33,9 +34,7 @@ impl Runner {
                 };
             }
         }
-        if self.execute {
-
-        }
+        if self.execute {}
 
         println!("{:#?}", result);
 
@@ -60,9 +59,7 @@ impl Runner {
                 };
             }
         }
-        if self.execute {
-
-        }
+        if self.execute {}
 
         println!("{:#?}", result);
 
@@ -70,14 +67,30 @@ impl Runner {
     }
 
     pub fn verify_path(&self, path: &str) -> bool {
-        let path = PathBuf::from(path).canonicalize().unwrap();
-        println!("{}", path.display());
-        match self.verify {
-            true => {}
-            false => {
-                return true;
+        println!("{}", path);
+        if !self.verify {
+            return true;
+        }
+        let path = match expand_env_vars(path) {
+            Ok(o) => {
+                PathBuf::from(o)
+            }
+            Err(e) => {
+                println!("    {}", e);
+                return false;
+            }
+        };
+
+
+        match path.canonicalize() {
+            Ok(o) => {
+                println!("C: {}", o.display())
+            }
+            Err(e) => {
+                println!("E: {}", e)
             }
         }
+
         let result = path.exists();
         if !path.exists() {
             println!("{}", "└╴╴╴╴ No longer exists".red());
@@ -98,4 +111,17 @@ pub fn get_os_path() -> XResult<Vec<String>> {
     let (env, _) = hklm.create_subkey("System\\CurrentControlSet\\Control\\Session Manager\\Environment")?;
     let path: String = env.get_value("PATH")?;
     get_path(&path)
+}use regex::Captures;
+use regex::Regex;
+pub static WINDOWS_PERCENT_PATTERN: LazyLock<Regex> = LazyLock::new(||
+    Regex::new("%([[:word:]]*)%").expect("Invalid Regex")
+);
+
+pub fn expand_env_vars(s: &str) -> std::io::Result<String> {
+    let result: String = WINDOWS_PERCENT_PATTERN.replace_all(s, |c: &Captures| match &c[1] {
+        "" => String::from("%"),
+        varname => std::env::var(varname).expect("Bad Var Name")
+    }).into();
+
+    Ok(result)
 }
