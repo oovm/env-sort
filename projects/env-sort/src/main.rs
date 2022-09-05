@@ -2,28 +2,22 @@ pub use errors::XResult;
 
 mod errors;
 
+pub mod utils;
 #[cfg(target_os = "windows")]
 pub mod windows;
-pub mod utils;
-
 
 pub struct App {}
 
-
 pub struct Runner {
     execute: bool,
-    verify: bool
+    verify: bool,
 }
 
 impl Default for Runner {
     fn default() -> Self {
-        Self {
-            execute: false,
-            verify: false,
-        }
+        Self { execute: false, verify: true }
     }
 }
-
 
 fn main() {
     let r = Runner::default();

@@ -31,15 +31,13 @@ pub fn get_path(path: &str) -> XResult<Vec<String>> {
                         '\"' => {
                             break;
                         }
-                        _ => this.push(inner)
+                        _ => this.push(inner),
                     }
                 }
             }
             // 普通分割
-            ';' => {
-                out.push(take(&mut this))
-            }
-            _ => this.push(outer)
+            ';' => out.push(take(&mut this)),
+            _ => this.push(outer),
         }
     }
     out.push(take(&mut this));

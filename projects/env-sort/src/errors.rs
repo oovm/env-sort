@@ -1,6 +1,8 @@
-use std::env::VarError;
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::{
+    env::VarError,
+    error::Error,
+    fmt::{Debug, Display, Formatter},
+};
 
 pub type XResult<T = ()> = Result<T, XError>;
 
@@ -17,20 +19,14 @@ impl Display for XError {
 
 impl Error for XError {}
 
-
 impl From<VarError> for XError {
     fn from(error: VarError) -> Self {
-        XError {
-            message: error.to_string(),
-        }
+        XError { message: error.to_string() }
     }
 }
 
-
 impl From<std::io::Error> for XError {
     fn from(error: std::io::Error) -> Self {
-        XError {
-            message: error.to_string(),
-        }
+        XError { message: error.to_string() }
     }
 }
