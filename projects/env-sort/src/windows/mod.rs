@@ -1,13 +1,13 @@
-use std::{collections::BTreeSet, path::PathBuf};
-use std::sync::LazyLock;
+use std::{collections::BTreeSet, env::var, path::PathBuf, sync::LazyLock};
 
 use colored::Colorize;
+use regex::{Captures, Regex};
 use winreg::{
     enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE},
     RegKey,
 };
 
-use crate::{Runner, utils::get_path, XResult};
+use crate::{utils::get_path, Runner, XResult};
 
 impl Runner {
     pub fn run(&self) -> XResult {
@@ -17,7 +17,10 @@ impl Runner {
     }
 
     fn sort_user_path(&self) -> XResult {
-        let paths = get_user_path()?;
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let (env, _) = hkcu.create_subkey("Environment")?;
+        let path: String = env.get_value("PATH")?;
+        let paths = get_path(&path)?;
         println!("{}", "Before sort user path: ".bright_yellow());
         for path in paths.iter() {
             println!("{}", path)
@@ -34,15 +37,17 @@ impl Runner {
                 };
             }
         }
-        if self.execute {}
-
-        println!("{:#?}", result);
-
+        if self.execute {
+            env.set_value("Path", &result.join(";"))?;
+        }
         Ok(())
     }
 
     fn sort_os_path(&self) -> XResult {
-        let paths = get_os_path()?;
+        let hklm = RegKey::predef(HKEY_LOCAL_MACHINE); // 就是这么长的离谱
+        let (env, _) = hklm.create_subkey("System\\CurrentControlSet\\Control\\Session Manager\\Environment")?;
+        let path: String = env.get_value("PATH")?;
+        let paths = get_path(&path)?;
         println!("{}", "Before sort path: ".bright_yellow());
         for path in paths.iter() {
             println!("{}", path)
@@ -59,69 +64,55 @@ impl Runner {
                 };
             }
         }
-        if self.execute {}
-
-        println!("{:#?}", result);
-
+        if self.execute {
+            env.set_value("Path", &result.join(";"))?;
+        }
         Ok(())
     }
 
-    pub fn verify_path(&self, path: &str) -> bool {
-        println!("{}", path);
+    pub fn verify_path(&self, raw: &str) -> Option<String> {
+        println!("{}", raw);
         if !self.verify {
-            return true;
+            return Some(raw.to_string());
         }
-        let path = match expand_env_vars(path) {
-            Ok(o) => {
-                PathBuf::from(o)
-            }
-            Err(e) => {
-                println!("    {}", e);
-                return false;
-            }
-        };
-
-
-        match path.canonicalize() {
-            Ok(o) => {
-                println!("C: {}", o.display())
-            }
-            Err(e) => {
-                println!("E: {}", e)
-            }
-        }
-
+        let path = PathBuf::from(expand_env_vars(raw)?);
         let result = path.exists();
-        if !path.exists() {
+        if !result {
             println!("{}", "└╴╴╴╴ No longer exists".red());
+            return None;
         }
+        if !raw.contains("%") {
+            let new = path.canonicalize()?;
+            match path.canonicalize() {
+                Ok(o) => {}
+                Err(_) => {}
+            }
+        }
+
         result
     }
 }
 
-pub fn get_user_path() -> XResult<Vec<String>> {
-    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-    let (env, _) = hkcu.create_subkey("Environment")?;
-    let path: String = env.get_value("PATH")?;
-    get_path(&path)
-}
+pub static WINDOWS_PERCENT_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new("%([[:word:]]*)%").expect("Invalid Regex"));
 
-pub fn get_os_path() -> XResult<Vec<String>> {
-    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE); // 就是这么长的离谱
-    let (env, _) = hklm.create_subkey("System\\CurrentControlSet\\Control\\Session Manager\\Environment")?;
-    let path: String = env.get_value("PATH")?;
-    get_path(&path)
-}use regex::Captures;
-use regex::Regex;
-pub static WINDOWS_PERCENT_PATTERN: LazyLock<Regex> = LazyLock::new(||
-    Regex::new("%([[:word:]]*)%").expect("Invalid Regex")
-);
-
-pub fn expand_env_vars(s: &str) -> std::io::Result<String> {
-    let result: String = WINDOWS_PERCENT_PATTERN.replace_all(s, |c: &Captures| match &c[1] {
-        "" => String::from("%"),
-        varname => std::env::var(varname).expect("Bad Var Name")
-    }).into();
-
-    Ok(result)
+pub fn expand_env_vars(s: &str) -> Option<String> {
+    let result = WINDOWS_PERCENT_PATTERN
+        .replace_all(s, |c: &Captures| {
+            match &c[1] {
+                "" => String::from("%"),
+                // `|` 不合法
+                varname => match var(varname) {
+                    Ok(o) => o,
+                    Err(_) => {
+                        println!("{}: {}", "└╴╴╴╴ No such variable".red(), varname);
+                        String::from("|")
+                    }
+                },
+            }
+        })
+        .to_string();
+    match result.contains('|') {
+        true => None,
+        false => Some(result),
+    }
 }

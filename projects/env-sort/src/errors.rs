@@ -8,7 +8,7 @@ pub type XResult<T = ()> = Result<T, XError>;
 
 #[derive(Debug, Clone)]
 pub struct XError {
-    message: String,
+    pub message: String,
 }
 
 impl Display for XError {
