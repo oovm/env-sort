@@ -9,6 +9,8 @@ use winreg::{
 
 use crate::{utils::get_path, Runner, XResult};
 
+pub static WINDOWS_PERCENT_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new("%([[:word:]]*)%").expect("Invalid Regex"));
+
 impl Runner {
     pub fn run(&self) -> XResult {
         self.sort_os_path()?;
@@ -28,15 +30,7 @@ impl Runner {
         println!();
         let sort_path = BTreeSet::from_iter(paths.iter().map(|s| s.trim_end_matches('\\')));
         println!("{}", "After sort user path: ".green());
-        let mut result = vec![];
-        for path in sort_path {
-            if self.verify_path(path) {
-                match path.contains(';') {
-                    true => result.push(format!("\"{}\"", path)),
-                    false => result.push(format!("{}", path)),
-                };
-            }
-        }
+        let result = self.collect_path(&sort_path);
         if self.execute {
             env.set_value("Path", &result.join(";"))?;
         }
@@ -55,22 +49,32 @@ impl Runner {
         println!();
         let sort_path = BTreeSet::from_iter(paths.iter().map(|s| s.trim_end_matches('\\')));
         println!("{}", "After sort path: ".green());
-        let mut result = vec![];
-        for path in sort_path {
-            if self.verify_path(path) {
-                match path.contains(';') {
-                    true => result.push(format!("{:?}", path)),
-                    false => result.push(format!("{}", path)),
-                };
-            }
-        }
+        let result = self.collect_path(&sort_path);
         if self.execute {
             env.set_value("Path", &result.join(";"))?;
         }
         Ok(())
     }
 
+    fn collect_path(&self, set: &BTreeSet<&str>) -> Vec<String> {
+        let mut result = vec![];
+        for path in set {
+            if let Some(s) = self.verify_path(path) {
+                result.push(s)
+            }
+        }
+        result
+    }
+
     pub fn verify_path(&self, raw: &str) -> Option<String> {
+        let path = self.try_verify_path(raw)?;
+        let out = match path.contains(';') {
+            true => format!("\"{}\"", path),
+            false => format!("{}", path),
+        };
+        Some(out)
+    }
+    fn try_verify_path(&self, raw: &str) -> Option<String> {
         println!("{}", raw);
         if !self.verify {
             return Some(raw.to_string());
@@ -82,18 +86,20 @@ impl Runner {
             return None;
         }
         if !raw.contains("%") {
-            let new = path.canonicalize()?;
             match path.canonicalize() {
-                Ok(o) => {}
+                Ok(o) => match o.to_str() {
+                    None => {}
+                    Some(s) => {
+                        let pretty = s.trim_start_matches("\\\\?\\");
+                        return Some(pretty.to_string());
+                    }
+                },
                 Err(_) => {}
             }
         }
-
-        result
+        return Some(path.to_string_lossy().to_string());
     }
 }
-
-pub static WINDOWS_PERCENT_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new("%([[:word:]]*)%").expect("Invalid Regex"));
 
 pub fn expand_env_vars(s: &str) -> Option<String> {
     let result = WINDOWS_PERCENT_PATTERN
@@ -104,7 +110,7 @@ pub fn expand_env_vars(s: &str) -> Option<String> {
                 varname => match var(varname) {
                     Ok(o) => o,
                     Err(_) => {
-                        println!("{}: {}", "└╴╴╴╴ No such variable".red(), varname);
+                        println!("{}: %{}%", "└╴╴╴╴ No such variable".red(), varname);
                         String::from("|")
                     }
                 },

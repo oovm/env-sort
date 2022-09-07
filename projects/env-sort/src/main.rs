@@ -17,7 +17,7 @@ pub struct Runner {
 
 impl Default for Runner {
     fn default() -> Self {
-        Self { execute: false, verify: true }
+        Self { execute: true, verify: true }
     }
 }
 
