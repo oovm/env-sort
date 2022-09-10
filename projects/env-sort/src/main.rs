@@ -1,5 +1,7 @@
 #![feature(once_cell)]
 
+use clap::Parser;
+
 pub use errors::XResult;
 
 mod errors;
@@ -8,6 +10,8 @@ pub mod utils;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
 pub struct App {}
 
 pub struct Runner {
@@ -22,6 +26,7 @@ impl Default for Runner {
 }
 
 fn main() {
+    let _ = App::parse();
     let r = Runner::default();
     r.run().unwrap();
 }
