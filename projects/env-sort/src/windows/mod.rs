@@ -13,8 +13,10 @@ pub static WINDOWS_PERCENT_PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::ne
 
 impl Runner {
     pub fn run(&self) -> XResult {
+        self.print_dry_run();
         self.sort_os_path()?;
         println!();
+        self.print_dry_run();
         self.sort_user_path()
     }
 
@@ -64,6 +66,12 @@ impl Runner {
             }
         }
         result
+    }
+
+    fn print_dry_run(&self) {
+        if !self.execute {
+            println!("{}", "[Dry Run]".bright_yellow().bold());
+        }
     }
 
     pub fn verify_path(&self, raw: &str) -> Option<String> {
