@@ -1,10 +1,10 @@
 [package]
 name = "env-sort"
-version = "0.0.0"
+version = "0.1.0"
 authors = ["Aster <192607617@qq.com>"]
-description = "..."
-repository = "https://github.com/oovm/sub_projects"
-documentation = "https://docs.rs/sub_projects"
+description = "Sort your environment variables"
+repository = "https://github.com/oovm/env-sort"
+documentation = "https://docs.rs/env-sort"
 readme = "Readme.md"
 license = "MPL-2.0"
 edition = "2021"
@@ -15,10 +15,15 @@ itertools = "0.10.5"
 regex = "1.7.0"
 colored = "2.0.0"
 find-target = "0.1.0"
-winreg = "0.10.1"
-winres = "0.1.12"
 
 [dev-dependencies]
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.10.1"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1.12"
+
 
 [features]
 default = []
