@@ -10,19 +10,6 @@ Env Sort
 
 ---
 
-- 排序前
-
-
-
-- 排序后
-
-
-
-
-一本满足
-
-
-
 ## Install
 
 如果已经安装了 rust 环境, 可以直接用 cargo 安装.
@@ -56,6 +43,9 @@ options:
       查看版本信息
 ```
 
+
+
+
 ## Problem
 
 首次运行可能触发你电脑上的杀毒软件, 比如这样:
@@ -63,3 +53,7 @@ options:
 ![Virus Error](../../.github/assets/virus.png)
 
 这是因为 Windows 的环境变量在注册表里, 直接点允许即可.
+
+正常运行结果如下: 
+
+![](https://user-images.githubusercontent.com/17541209/203804749-83f81a45-e613-4a68-89cc-30948c051cfd.png)

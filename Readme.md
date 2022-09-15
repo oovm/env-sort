@@ -25,3 +25,15 @@ options:
   -V, --version
           Print version information
 ```
+
+
+## Install
+
+```sh
+env-sort    # Preview
+env-sort -e # Execute
+```
+
+- Example of successful running results:
+
+![](https://user-images.githubusercontent.com/17541209/203804749-83f81a45-e613-4a68-89cc-30948c051cfd.png)
