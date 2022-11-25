@@ -1,6 +1,7 @@
 use std::{collections::BTreeSet, env::var, path::PathBuf, sync::LazyLock};
-
+use std::string::String;
 use colored::Colorize;
+
 use regex::{Captures, Regex};
 use winreg::{
     enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE},
@@ -24,15 +25,30 @@ impl Runner {
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
         let (env, _) = hkcu.create_subkey("Environment")?;
         let path: String = env.get_value("PATH")?;
-        let paths = get_path(&path)?;
+        let mut paths = get_path(&path)?;
         println!("{}", "Before sort user path: ".bright_yellow());
-        for path in paths.iter() {
-            println!("{}", path)
+        let mut detain_pos = usize::MAX;
+        for (pos, path) in paths.iter().enumerate() {
+            println!("{}", path);
+            if path.contains("\\Local\\Microsoft\\WindowsApps") {
+                detain_pos = pos;
+            }
+        }
+        let mut wrong_python_path = String::new();
+        if detain_pos != usize::MAX {
+            wrong_python_path = paths.swap_remove(detain_pos);
         }
         println!();
         let sort_path = BTreeSet::from_iter(paths.iter().map(|s| s.trim_end_matches('\\')));
         println!("{}", "After sort user path: ".green());
-        let result = self.collect_path(&sort_path);
+        let mut result = self.collect_path(&sort_path);
+        if detain_pos != usize::MAX {
+            println!();
+            println!("{}","Unsorted Item (Add to the end of PATH)".green());
+            println!("{}", wrong_python_path);
+            println!("{}", "└╴╴╴╴ Wrong Python path, may cause errors.".green());
+            result.push(wrong_python_path);
+        }
         if self.execute {
             env.set_value("Path", &result.join(";"))?;
         }
